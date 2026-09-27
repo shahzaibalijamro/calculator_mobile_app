@@ -12,6 +12,7 @@ class CalculatorScreen extends StatefulWidget {
 }
 
 class _MyWidgetState extends State<CalculatorScreen> {
+  String? currentOperation;
   String displayVal = "0";
   String secondDisplayVal = "0";
   String firstNum = "0";
@@ -240,38 +241,14 @@ class _MyWidgetState extends State<CalculatorScreen> {
         // if already has an operator, we calculate the previous one before adding new
         if (operatorPresentInCalc()) {
           calculate(updateMainDisplayVal: false);
+          displayVal += buttonNum;
           firstNum = secondDisplayVal;
           secondNum = "0";
-          displayVal += buttonNum;
           return;
         }
       }
       if (buttonNum == "remove") {
-        // if last character, then just clear all
-        if (isLastCharacter()) {
-          clearAll();
-          return;
-        }
-        if (lastCharacterOf(displayVal) == "+") {
-          displayVal = removeLastCharacterFrom(displayVal);
-          return;
-        } else {
-          displayVal = removeLastCharacterFrom(displayVal);
-        }
-        if (displayVal.contains("+")) {
-          if (secondNum != "0") {
-            if (secondNum.length > 1) {
-              secondNum = removeLastCharacterFrom(secondNum);
-            } else {
-              secondNum = "0";
-            }
-          }
-        } else {
-          if (firstNum != "0") {
-            firstNum = removeLastCharacterFrom(firstNum);
-          }
-        }
-        calculate(updateMainDisplayVal: false);
+        removeLastCharacter();
         return;
       }
       if (buttonNum == "=") {
@@ -288,15 +265,19 @@ class _MyWidgetState extends State<CalculatorScreen> {
         }
         displayVal = buttonNum;
       } else {
+        print("this ran");
         displayVal += buttonNum;
       }
-      if (displayVal.contains("+")) {
-        if (buttonNum != "+") {
+      if (operatorPresentInCalc()) {
+        if (!operationsAvailable.contains(buttonNum)) {
           if (secondNum == "0") {
             secondNum = buttonNum;
           } else {
             secondNum += buttonNum;
           }
+          calculate(updateMainDisplayVal: false);
+        } else {
+          print("this ran too!");
           calculate(updateMainDisplayVal: false);
         }
       } else {
@@ -308,9 +289,6 @@ class _MyWidgetState extends State<CalculatorScreen> {
       }
     });
     print(displayVal);
-    print(firstNum);
-    print(secondNum);
-    print(secondDisplayVal);
   }
 
   void clearAll() {
@@ -320,20 +298,121 @@ class _MyWidgetState extends State<CalculatorScreen> {
     secondNum = "0";
   }
 
-  void calculate({bool updateMainDisplayVal = true}) {
+  void removeLastCharacter() {
+    // if last character, then just clear all
+    if (isLastCharacter()) {
+      clearAll();
+      return;
+    }
+    if (operationsAvailable.contains(lastCharacterOf(displayVal))) {
+      displayVal = removeLastCharacterFrom(displayVal);
+      currentOperation == null;
+      print("this runs now");
+      print("secondNum $secondNum");
+      // return;
+    } else {
+      displayVal = removeLastCharacterFrom(displayVal);
+    }
+    if (operatorPresentInCalc()) {
+      if (secondNum != "0") {
+        if (secondNum.length > 1) {
+          secondNum = removeLastCharacterFrom(secondNum);
+        } else {
+          secondNum = "0";
+        }
+      } else {
+        String previousNum = displayVal.substring(
+          displayVal.lastIndexOf("+") + 1,
+          displayVal.length,
+        );
+        secondNum = previousNum;
+        print(previousNum);
+      }
+    } else {
+      if (firstNum != "0") {
+        firstNum = removeLastCharacterFrom(firstNum);
+      }
+    }
+    calculate(updateMainDisplayVal: false);
+  }
+
+  void calculate({
+    bool updateMainDisplayVal = true,
+    isNotFirstCalculation = false,
+  }) {
     num firstVal = num.parse(firstNum);
     num secondVal = num.parse(secondNum);
-    print(firstVal);
-    print(secondVal);
+    if (operatorPresentInCalc()) {
+      if (operationsAvailable.contains(lastCharacterOf(displayVal))) {
+        print("thIS ALSO RUNS");
+        currentOperation = lastCharacterOf(displayVal);
+      }
+    }
     setState(() {
       if (updateMainDisplayVal) {
-        displayVal = "${firstVal + secondVal}";
-        secondDisplayVal = "${firstVal + secondVal}";
+        switch (currentOperation) {
+          case "+":
+            displayVal = "${firstVal + secondVal}";
+            secondDisplayVal = "${firstVal + secondVal}";
+            break;
+          case "-":
+            displayVal = "${firstVal - secondVal}";
+            secondDisplayVal = "${firstVal - secondVal}";
+            break;
+          case "/":
+            if (secondVal == 0) {
+              secondDisplayVal = "Cannot divide by 0";
+              return;
+            }
+            displayVal = "${firstVal / secondVal}";
+            secondDisplayVal = "${firstVal / secondVal}";
+            break;
+          case "*":
+            displayVal = "${firstVal * secondVal}";
+            secondDisplayVal = "${firstVal * secondVal}";
+            break;
+          case "%":
+            displayVal = "${firstVal % secondVal}";
+            secondDisplayVal = "${firstVal % secondVal}";
+            break;
+          default:
+            return;
+        }
         firstNum = displayVal;
         secondNum = "0";
       } else {
-        secondDisplayVal = "${firstVal + secondVal}";
+        switch (currentOperation) {
+          case "+":
+            secondDisplayVal = "${firstVal + secondVal}";
+            break;
+          case "-":
+            secondDisplayVal = "${firstVal - secondVal}";
+            break;
+          case "/":
+            if (secondVal == 0) {
+              secondDisplayVal = "Cannot divide by 0";
+              return;
+            }
+            secondDisplayVal = "${firstVal / secondVal}";
+            break;
+          case "*":
+            secondDisplayVal = "${firstVal * secondVal}";
+            break;
+          case "%":
+            secondDisplayVal = "${firstVal % secondVal}";
+            break;
+          default:
+            return;
+        }
       }
+    });
+
+    print({
+      "displayValue": displayVal,
+      "secondDisplayValue": secondDisplayVal,
+      "firstNum": firstNum,
+      "SecondNum": secondNum,
+      "CurrentOperation": currentOperation,
     });
   }
 
